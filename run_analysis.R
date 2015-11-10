@@ -12,7 +12,7 @@ if(!file.exists(activityFile)) {
 
 activity <- read.csv(activityFile)
 
-# Generate a histogram
+# Generate a histogram with daily sums of steps
 
 library(dplyr)
 
@@ -23,7 +23,7 @@ activityDaily <- activity %>%
 
 library(ggplot2)
 hist1 <- qplot(activityDaily$stepsSum, geom="histogram", xlab = "Daily sum of steps") 
-hist1 <- hist + ggtitle("Histogram of daily sums of steps")
+hist1 <- hist1 + ggtitle("Histogram of daily sums of steps")
 hist1
 
 # Calculating daily mean and median number of steps
@@ -54,3 +54,42 @@ hist2 + annotate("text",
                  y=intervalMaxAvg[,2],
                  hjust = 0,
                  size = 4)
+
+# Calculate the number of intervals with missing values
+
+nrow(activity[is.na(activity$steps),])
+
+# Impute the missing values with the mean value for a given interval
+# Used the mean value for each interval for imputation
+
+activityNotNA <- activity[!is.na(activity$steps),]
+activityNA <- activity[is.na(activity$steps),]
+
+fillNA <- function(x) {activityNA$steps[activityNA$interval == x] <<- activityInterval$stepsAvg[activityInterval$interval == x]}
+
+lapply(unique(activityNA$interval), fillNA)
+
+fillNA(900)
+activityNA$steps[activityNA$interval == 900] 
+activityInterval$stepsAvg[activityInterval$interval == 900]
+
+activityNew <- arrange(rbind(activityNotNA, activityNA),date, interval)
+
+# Generate a histogram with daily sums of steps
+
+activityNewDaily <- activityNew %>%
+    group_by(date) %>% 
+    summarise(stepsSum = sum(steps)) %>% 
+    as.data.frame()
+
+hist3 <- ggplot(activityNewDaily, aes(x = stepsSum)) + geom_histogram()
+hist3 <- hist3 + xlab("Daily sum of steps") 
+hist3 <- hist3 + ggtitle("Histogram of daily sums of steps - dataset with imputed values")
+hist3
+
+# Calculating daily mean and median number of steps for the new dataset
+
+mean(activityDaily$stepsSum)
+median(activityDaily$stepsSum)
+
+
