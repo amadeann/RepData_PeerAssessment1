@@ -8,11 +8,44 @@ output:
 
 ## Loading and preprocessing the data
 
+```{r, echo=TRUE}
+activityFile <- "activity.csv"
+zippedFile <- "activity.zip"
 
+if(!file.exists(activityFile)) {
+    unzip(zippedFile)
+    message(paste("" ,zippedFile, "extracted to", activityFile, "file"))
+} else {
+    message(paste(activityFile, "file already existed."))   
+}
+
+activity <- read.csv(activityFile)
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r, echo=TRUE}
+library(dplyr)
 
+activityDaily <- activity %>%
+                    group_by(date) %>% 
+                    summarise(stepsSum = sum(steps, na.rm = TRUE)) %>% 
+                    as.data.frame()
+
+library(ggplot2)
+hist1 <- qplot(activityDaily$stepsSum, geom="histogram", xlab = "Daily sum of steps") 
+hist1 <- hist1 + ggtitle("Histogram of daily sums of steps")
+hist1
+
+# Calculating daily mean and median number of steps
+dailyMean <- mean(activityDaily$stepsSum)
+dailyMedian <- median(activityDaily$stepsSum)
+# dailyMean
+# dailyMedian
+```
+
+Daily mean: `r round(dailyMean,2)`  
+Daily median: `r dailyMedian`
 
 ## What is the average daily activity pattern?
 

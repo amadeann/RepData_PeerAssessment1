@@ -27,8 +27,10 @@ hist1 <- hist1 + ggtitle("Histogram of daily sums of steps")
 hist1
 
 # Calculating daily mean and median number of steps
-mean(activityDaily$stepsSum)
-median(activityDaily$stepsSum)
+dailyMean <- mean(activityDaily$stepsSum)
+dailyMedian <- median(activityDaily$stepsSum)
+dailyMean
+dailyMedian
 
 # Average number of steps in 5-minute interval
 
@@ -89,7 +91,31 @@ hist3
 
 # Calculating daily mean and median number of steps for the new dataset
 
-mean(activityDaily$stepsSum)
-median(activityDaily$stepsSum)
+dailyNewMean <- mean(activityNewDaily$stepsSum)
+dailyNewMedian <- median(activityNewDaily$stepsSum)
+dailyNewMean
+dailyNewMedian
 
+meanDiff <- dailyNewMean - dailyMean
+medianDiff <- dailyNewMedian - dailyMedian
+meanDiff
+medianDiff
 
+# data.frame(activityDaily$date,activityDaily$stepsSum,activityNewDaily$stepsSum)
+
+# Average number of steps in 5-minute interval - dataset with imputed values
+
+# install.packages("timeDate")
+library(timeDate)
+
+activityNewInterval <- activityNew %>%
+    mutate(day = ifelse(isWeekend(date),"weekend", "weekday")) %>%
+    group_by(interval, day) %>% 
+    summarise(stepsAvg = mean(steps, na.rm = TRUE)) %>% 
+    as.data.frame()
+
+hist5 <- ggplot(activityNewInterval, aes(interval, stepsAvg)) + geom_line()
+hist5 <- hist5 + facet_grid(day ~ .)
+hist5 <- hist5 + xlab("5-minute intervals") + ylab("Average number of steps")
+hist5 <- hist5 + ggtitle("Average number of steps per interval - dataset with imputed values")
+hist5
