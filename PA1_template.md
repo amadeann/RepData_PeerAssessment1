@@ -22,7 +22,7 @@ if(!file.exists(activityFile)) {
 ```
 ## activity.csv file already existed.
 ```
-Read the activity dataset to a data frame.
+Read in the activity dataset to a data frame.
 
 ```r
 activity <- read.csv(activityFile)
