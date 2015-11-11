@@ -1,8 +1,11 @@
 # Reproducible Research: Peer Assessment 1
+Amadeusz Annissimo  
 
 
 ## Loading and preprocessing the data
 
+
+Download the file 'activity.csv' if it doesn't already exist in the working directory. If exists, do nothing.
 
 ```r
 activityFile <- "activity.csv"
@@ -19,6 +22,7 @@ if(!file.exists(activityFile)) {
 ```
 ## activity.csv file already existed.
 ```
+Read the activity dataset to a data frame.
 
 ```r
 activity <- read.csv(activityFile)
@@ -28,57 +32,154 @@ activity <- read.csv(activityFile)
 
 
 ```r
-library(dplyr)
-```
+library(dplyr, warn.conflicts = FALSE)
 
-```
-## 
-## Attaching package: 'dplyr'
-## 
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 activityDaily <- activity %>%
                     group_by(date) %>% 
                     summarise(stepsSum = sum(steps, na.rm = TRUE)) %>% 
                     as.data.frame()
 
 library(ggplot2)
-hist1 <- qplot(activityDaily$stepsSum, geom="histogram", xlab = "Daily sum of steps") 
+hist1 <- qplot(activityDaily$stepsSum, geom="histogram", xlab = "Daily sum of steps", binwidth=diff(range(activityDaily$stepsSum))/30) 
 hist1 <- hist1 + ggtitle("Histogram of daily sums of steps")
 hist1
 ```
 
-```
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
-```
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
 
-![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+High count of days with low values is caused by missing values which will be imputed in further steps.
+
 
 ```r
 # Calculating daily mean and median number of steps
 dailyMean <- mean(activityDaily$stepsSum)
 dailyMedian <- median(activityDaily$stepsSum)
-# dailyMean
-# dailyMedian
 ```
 
-Daily mean: 9354.23  
-Daily median: 10395
+Daily mean - number of steps : **9354.23**  
+Daily median - number of stesp: **10395**
 
 ## What is the average daily activity pattern?
 
 
+```r
+activityInterval <- activity %>%
+    group_by(interval) %>% 
+    summarise(stepsAvg = mean(steps, na.rm = TRUE)) %>% 
+    as.data.frame()
+
+hist2 <- ggplot(activityInterval, aes(interval, stepsAvg)) + geom_line() 
+hist2 <- hist2 + xlab("5-minute intervals") + ylab("Average number of steps")
+hist2 <- hist2 + ggtitle("Average number of steps per interval")
+hist2
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+
+```r
+# Interval with the maximum number of steps
+
+intervalMaxAvg <- activityInterval[which.max(activityInterval$stepsAvg),]
+```
+**835** is the interval with the maximum average number of steps. The average number of steps in this interval equals **206.17**. Location of that point in the graph below is marked in red.
+
+```r
+hist2 <- hist2 + geom_point(data = intervalMaxAvg, color = "red")
+hist2 + annotate("text",
+                 label = paste("max: ", intervalMaxAvg[,1], ", ", round(intervalMaxAvg[,2], digits = 2), sep = ""),
+                 x=intervalMaxAvg[,1] + 25,
+                 y=intervalMaxAvg[,2],
+                 hjust = 0,
+                 size = 4)
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
 
 ## Imputing missing values
 
 
+```r
+# Calculate the number of intervals with missing values
+
+missingValues <- nrow(activity[is.na(activity$steps),])
+observations <- nrow(activity)
+missingShare <- (missingValues/observations)*100
+```
+Activity dataset has 17568 observations in terms of number of steps out of which 2304 are missing values (13.1% of the dataset).
+
+### Imputation strategy
+
+For further analysis, missing values were imputed using the mean number of steps for each interval averaged across all days, where the value for that particular interval was not missing. Code used for imputation is presented below.
+
+```r
+# Impute the missing values with the mean value for a given interval
+# Used the mean value for each interval for imputation
+
+activityNotNA <- activity[!is.na(activity$steps),]
+activityNA <- activity[is.na(activity$steps),]
+
+fillNA <- function(x) {activityNA$steps[activityNA$interval == x] <<- activityInterval$stepsAvg[activityInterval$interval == x]}
+
+invisible(lapply(unique(activityNA$interval), fillNA))
+
+activityNew <- arrange(rbind(activityNotNA, activityNA),date, interval)
+```
+### Summary of the dataset with imputed values
+
+```r
+# Generate a histogram with daily sums of steps
+
+activityNewDaily <- activityNew %>%
+    group_by(date) %>% 
+    summarise(stepsSum = sum(steps)) %>% 
+    as.data.frame()
+
+hist3 <- ggplot(activityNewDaily, aes(x = stepsSum)) + geom_histogram(binwidth=diff(range(activityNewDaily$stepsSum))/30)
+hist3 <- hist3 + xlab("Daily sum of steps") 
+hist3 <- hist3 + ggtitle("Histogram of daily sums of steps - dataset with imputed values")
+hist3
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
+
+```r
+# Calculating daily mean and median number of steps for the new dataset
+
+dailyNewMean <- mean(activityNewDaily$stepsSum)
+dailyNewMedian <- median(activityNewDaily$stepsSum)
+meanDiff <- dailyNewMean - dailyMean
+medianDiff <- dailyNewMedian - dailyMedian
+```
+
+Daily mean - dataset with imputed values: **10766.19**  
+Daily median - dataset with imputed values: **10766.19**
+
+The mean number of steps in the dataset with imputed values increased by **1411.96** and median by **371.19**.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```r
+# Average number of steps in 5-minute interval - dataset with imputed values
+
+# install.packages("timeDate")
+library(timeDate)
+
+activityNewInterval <- activityNew %>%
+    mutate(day = ifelse(isWeekend(date),"weekend", "weekday")) %>%
+    group_by(interval, day) %>% 
+    summarise(stepsAvg = mean(steps, na.rm = TRUE)) %>% 
+    as.data.frame()
+
+hist5 <- ggplot(activityNewInterval, aes(interval, stepsAvg)) + geom_line()
+hist5 <- hist5 + facet_grid(day ~ .)
+hist5 <- hist5 + xlab("5-minute intervals") + ylab("Average number of steps")
+hist5 <- hist5 + ggtitle("Average number of steps per interval - dataset with imputed values")
+hist5
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
+
+There is a couple of patterns which can be seen in the graphs above. First of all, average number of steps in the 'early' intervals (before around 9 a.m.) is much higher on weekdays. Study subject tend to 'sleep in' on weekends.  
+Second difference relates to mid-day activity, which is much higher on the weekends. The individual most likely has an office job, which does not require much physical movement. This lack of movement is somewhat compensated on the weekend.  
+Last easily detectable major pattern is higher activity in the evening hours on the weekend. Evening 'rest' (intervals with very low number of steps) is shifted by around 1 hour on the weekends (8.30 p.m. versus 7.30 p.m. on weekdays).
