@@ -1,5 +1,10 @@
-# Reproducible Research: Peer Assessment 1
-Amadeusz Annissimo  
+---
+title: "Reproducible Research: Peer Assessment 1"
+author: Amadeusz Annissimo
+output: 
+  html_document:
+    keep_md: true
+---
 
 
 ## Loading and preprocessing the data
@@ -40,12 +45,20 @@ activityDaily <- activity %>%
                     as.data.frame()
 
 library(ggplot2)
+```
+
+```
+## Find out what's changed in ggplot2 with
+## news(Version == "1.0.1", package = "ggplot2")
+```
+
+```r
 hist1 <- qplot(activityDaily$stepsSum, geom="histogram", xlab = "Daily sum of steps", binwidth=diff(range(activityDaily$stepsSum))/30) 
 hist1 <- hist1 + ggtitle("Histogram of daily sums of steps")
 hist1
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
 
 High count of days with low values is caused by missing values which will be imputed in further steps.
 
@@ -74,7 +87,7 @@ hist2 <- hist2 + ggtitle("Average number of steps per interval")
 hist2
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
 
 ```r
 # Interval with the maximum number of steps
@@ -93,7 +106,7 @@ hist2 + annotate("text",
                  size = 4)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png) 
 
 ## Imputing missing values
 
@@ -140,7 +153,7 @@ hist3 <- hist3 + ggtitle("Histogram of daily sums of steps - dataset with impute
 hist3
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png) 
 
 ```r
 # Calculating daily mean and median number of steps for the new dataset
@@ -178,7 +191,7 @@ hist5 <- hist5 + ggtitle("Average number of steps per interval - dataset with im
 hist5
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png) 
 
 There is a couple of patterns which can be seen in the graphs above. First of all, average number of steps in the 'early' intervals (before around 9 a.m.) is much higher on weekdays. Study subject tend to 'sleep in' on weekends.  
 Second difference relates to mid-day activity, which is much higher on the weekends. The individual most likely has an office job, which does not require much physical movement. This lack of movement is somewhat compensated on the weekend.  
